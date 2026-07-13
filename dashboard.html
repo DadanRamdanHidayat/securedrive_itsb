@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>My Files — SecureDrive</title>
+
+<!-- Tailwind (CDN, no build step) -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Google Fonts: display + body -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<!-- Material Design Icons (MDI) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" />
+
+<!-- Supabase JS client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          background: "#080b10",
+          sidebar: "#0b0f16",
+          card: "#0e131b",
+          border: "#1b232f",
+          primary: "#1fd6a8",
+          "primary-foreground": "#04120e",
+          muted: "#7c8a9a",
+        },
+        fontFamily: {
+          display: ["Space Grotesk", "sans-serif"],
+          sans: ["Inter", "sans-serif"],
+        },
+      },
+    },
+  };
+</script>
+
+<style>
+  body {
+    background: #080b10;
+    color: #e6ebf0;
+  }
+
+  .gradient-text {
+    background-image: linear-gradient(135deg, #1fd6a8 0%, #22b8ff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .font-display {
+    font-family: "Space Grotesk", sans-serif;
+  }
+
+  input:focus-visible,
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid #1fd6a8;
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: 0.6rem;
+    color: #9aa7b5;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background-color .15s, color .15s;
+  }
+  .nav-item:hover {
+    background: #131a24;
+    color: #e6ebf0;
+  }
+  .nav-item.active {
+    background: #131c27;
+    color: #ffffff;
+  }
+
+  tbody tr:hover {
+    background: rgba(31, 214, 168, 0.05);
+  }
+
+  .dialog-backdrop {
+    background: rgba(0, 0, 0, 0.6);
+  }
+
+  .mdi {
+    line-height: 1;
+    vertical-align: middle;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(31, 214, 168, 0.12);
+    color: #1fd6a8;
+  }
+</style>
+</head>
+
+<body class="min-h-screen font-sans antialiased">
+
+<div class="flex min-h-screen">
+
+  <!-- Sidebar -->
+  <aside class="hidden md:flex w-64 flex-col justify-between bg-sidebar border-r border-border p-5">
+    <div>
+      <div class="flex items-center gap-3 mb-8">
+        <div class="size-9 rounded-lg grid place-items-center bg-primary/15 border border-primary/30">
+          <i class="mdi mdi-shield-lock-outline text-lg text-primary"></i>
+        </div>
+        <div>
+          <div class="font-display text-base font-semibold leading-none">
+            Secure<span class="gradient-text">Drive</span>
+          </div>
+          <div class="text-[10px] uppercase tracking-[0.15em] text-muted mt-1">AES-256 Vault</div>
+        </div>
+      </div>
+
+      <nav class="space-y-1">
+        <a href="dashboard.html" class="nav-item active">
+          <i class="mdi mdi-file-document-outline text-base"></i> My Files
+        </a>
+        <a href="shared.html" class="nav-item">
+          <i class="mdi mdi-share-variant-outline text-base"></i> Shared With Me
+        </a>
+        <a href="recent.html" class="nav-item">
+          <i class="mdi mdi-clock-outline text-base"></i> Recent
+        </a>
+        <a href="favorite.html" class="nav-item">
+          <i class="mdi mdi-star-outline text-base"></i> Favorites
+        </a>
+        <a href="activity.html" class="nav-item">
+          <i class="mdi mdi-pulse text-base"></i> Activity Log
+        </a>
+        <a href="setting.html" class="nav-item">
+          <i class="mdi mdi-cog-outline text-base"></i> Settings
+        </a>
+      </nav>
+    </div>
+
+    <div>
+      <div class="rounded-xl bg-card border border-border p-4 mb-3">
+        <div class="flex items-center gap-2 text-sm font-medium mb-1">
+          <span class="size-2 rounded-full bg-primary"></span> Vault online
+        </div>
+        <p class="text-xs text-muted leading-relaxed">
+          All files encrypted at rest with AES-256-GCM.
+        </p>
+      </div>
+      <button id="signout-btn" class="nav-item w-full justify-start">
+        <i class="mdi mdi-logout text-base"></i> Sign out
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="flex-1 p-6 lg:p-10">
+
+    <!-- Header -->
+    <header class="flex flex-wrap items-end justify-between gap-4 mb-6">
+      <div>
+        <div class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-primary mb-2">
+          <i class="mdi mdi-shield-check-outline text-sm"></i> Encrypted Vault
+        </div>
+        <h1 class="text-3xl font-display font-semibold">My Files</h1>
+        <p class="text-sm text-muted">
+          Every file is encrypted with AES-256-GCM before storage.
+        </p>
+      </div>
+
+      <button
+        id="open-upload"
+        class="h-10 px-4 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity flex items-center gap-2"
+      >
+        <i class="mdi mdi-plus text-base"></i> Upload File
+      </button>
+    </header>
+
+    <!-- Search -->
+    <div class="relative mb-4">
+      <i class="mdi mdi-magnify text-base absolute left-3.5 top-1/2 -translate-y-1/2 text-muted"></i>
+      <input
+        id="search-input"
+        type="text"
+        placeholder="Search file..."
+        class="w-full h-11 pl-10 pr-3 rounded-lg bg-card border border-border text-sm placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary"
+      />
+    </div>
+
+    <!-- File table -->
+    <div id="table-wrap" class="rounded-xl border border-border overflow-hidden bg-card">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border text-left text-muted uppercase text-xs tracking-wider">
+            <th class="px-5 py-3 font-medium">Name</th>
+            <th class="px-5 py-3 font-medium">Size</th>
+            <th class="px-5 py-3 font-medium">Uploaded</th>
+            <th class="px-5 py-3 font-medium">Status</th>
+            <th class="px-5 py-3 font-medium text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="file-rows">
+          <tr>
+            <td colspan="5" class="px-5 py-8 text-center text-muted">Loading files…</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Empty state -->
+    <div id="empty-state" class="hidden rounded-xl border border-border bg-card mt-4 p-16 text-center">
+      <div class="size-12 mx-auto mb-4 rounded-full grid place-items-center bg-border/40">
+        <i class="mdi mdi-lock-outline text-xl text-muted"></i>
+      </div>
+      <p class="text-muted" id="empty-state-text">No files yet. Upload your first encrypted file.</p>
+    </div>
+
+  </main>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="hidden fixed bottom-6 right-6 rounded-md px-4 py-3 text-sm shadow-lg"></div>
+
+<!-- Upload dialog -->
+<div id="upload-dialog" class="hidden fixed inset-0 z-50 grid place-items-center dialog-backdrop p-4">
+  <div class="rounded-xl bg-card border border-border w-full max-w-md p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-display font-semibold">Upload a file</h2>
+      <button id="close-upload" class="text-muted hover:text-white">
+        <i class="mdi mdi-close text-lg"></i>
+      </button>
+    </div>
+
+    <div
+      id="drop-zone"
+      class="rounded-lg border border-dashed border-border p-8 text-center cursor-pointer hover:border-primary transition-colors"
+    >
+      <i class="mdi mdi-cloud-upload-outline text-3xl mx-auto text-muted mb-3"></i>
+      <p class="text-sm">Click to choose a file or drag it here</p>
+      <p class="text-xs text-muted mt-1">Max 50MB per file</p>
+      <input id="file-input" type="file" class="hidden" />
+    </div>
+
+    <div id="selected-file" class="hidden mt-4 flex items-center justify-between rounded-md bg-background border border-border px-3 py-2 text-sm">
+      <span id="selected-file-name" class="truncate"></span>
+      <span id="selected-file-size" class="text-muted text-xs ml-2 shrink-0"></span>
+    </div>
+
+    <div id="upload-progress" class="hidden mt-4">
+      <div class="h-1.5 rounded-full bg-border overflow-hidden">
+        <div id="upload-progress-bar" class="h-full bg-primary transition-all" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <button
+      id="confirm-upload"
+      disabled
+      class="w-full h-10 mt-5 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+    >
+      Upload
+    </button>
+  </div>
+</div>
+
+<script>
+  // ---------------------------------------------------------------
+  // Configure your Supabase project here (same project as login.html)
+  // ---------------------------------------------------------------
+  const SUPABASE_URL = "https://mmpyztwsdeapnzrubiag.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_h942Ip3N5iwlEjtofekOqQ_qqg28710";
+
+  // Name of the Storage bucket that holds uploaded files.
+  // You need to create this bucket once in Supabase Dashboard → Storage.
+  const BUCKET_NAME = "vault-files";
+
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let currentUser = null;
+  let allFiles = []; // cached for client-side search
+
+  // ---------------------------------------------------------------
+  // Toast helper
+  // ---------------------------------------------------------------
+  function showToast(message, variant = "success") {
+    const toast = document.getElementById("toast");
+    toast.textContent = message;
+    toast.classList.remove("hidden");
+    toast.className =
+      "fixed bottom-6 right-6 rounded-md px-4 py-3 text-sm shadow-lg border " +
+      (variant === "success"
+        ? "bg-card text-primary border-primary/30"
+        : "bg-card text-red-400 border-red-500/30");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toast.classList.add("hidden"), 4000);
+  }
+
+  function formatSize(bytes) {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+
+  function formatDate(iso) {
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+  }
+
+  // ---------------------------------------------------------------
+  // Auth guard: must be signed in to see this page
+  // ---------------------------------------------------------------
+  async function requireAuth() {
+    const { data } = await supabaseClient.auth.getSession();
+    if (!data.session) {
+      window.location.href = "login.html";
+      return null;
+    }
+    return data.session.user;
+  }
+
+  document.getElementById("signout-btn").addEventListener("click", async () => {
+    await supabaseClient.auth.signOut();
+    window.location.href = "login.html";
+  });
+
+  // ---------------------------------------------------------------
+  // FileTable: list files from Storage (each user's own folder)
+  // ---------------------------------------------------------------
+  const fileRows = document.getElementById("file-rows");
+  const emptyState = document.getElementById("empty-state");
+  const emptyStateText = document.getElementById("empty-state-text");
+  const tableWrap = document.getElementById("table-wrap");
+  const searchInput = document.getElementById("search-input");
+
+  function userFolder() {
+    return currentUser.id;
+  }
+
+  async function loadFiles() {
+    const { data, error } = await supabaseClient.storage
+      .from(BUCKET_NAME)
+      .list(userFolder(), { sortBy: { column: "created_at", order: "desc" } });
+
+    if (error) {
+      fileRows.innerHTML = `<tr><td colspan="5" class="px-5 py-8 text-center text-red-400">${error.message}</td></tr>`;
+      return;
+    }
+
+    allFiles = (data || []).filter((f) => f.name !== ".emptyFolderPlaceholder");
+    renderFiles(allFiles);
+  }
+
+  function renderFiles(files) {
+    if (files.length === 0) {
+      fileRows.innerHTML = "";
+      tableWrap.classList.add("hidden");
+      emptyState.classList.remove("hidden");
+      emptyStateText.textContent = searchInput.value
+        ? "No files match your search."
+        : "No files yet. Upload your first encrypted file.";
+      return;
+    }
+
+    emptyState.classList.add("hidden");
+    tableWrap.classList.remove("hidden");
+
+    fileRows.innerHTML = "";
+    files.forEach((file) => {
+      const size = file.metadata?.size ?? 0;
+      const created = file.created_at ?? new Date().toISOString();
+
+      const tr = document.createElement("tr");
+      tr.className = "border-b border-border last:border-0";
+      tr.innerHTML = `
+        <td class="px-5 py-3">
+          <div class="flex items-center gap-2">
+            <i class="mdi mdi-file-outline text-base text-muted"></i>
+            <span class="truncate max-w-[220px]">${file.name}</span>
+          </div>
+        </td>
+        <td class="px-5 py-3 text-muted">${formatSize(size)}</td>
+        <td class="px-5 py-3 text-muted">${formatDate(created)}</td>
+        <td class="px-5 py-3">
+          <span class="status-pill"><i class="mdi mdi-lock-outline text-sm"></i> Encrypted</span>
+        </td>
+        <td class="px-5 py-3 text-right">
+          <button data-action="download" data-name="${file.name}" class="text-muted hover:text-primary p-1.5" title="Download">
+            <i class="mdi mdi-download-outline text-base"></i>
+          </button>
+          <button data-action="delete" data-name="${file.name}" class="text-muted hover:text-red-400 p-1.5" title="Delete">
+            <i class="mdi mdi-trash-can-outline text-base"></i>
+          </button>
+        </td>
+      `;
+      fileRows.appendChild(tr);
+    });
+
+  }
+
+  searchInput.addEventListener("input", () => {
+    const q = searchInput.value.trim().toLowerCase();
+    const filtered = q ? allFiles.filter((f) => f.name.toLowerCase().includes(q)) : allFiles;
+    renderFiles(filtered);
+  });
+
+  fileRows.addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-action]");
+    if (!btn) return;
+    const name = btn.dataset.name;
+    const path = `${userFolder()}/${name}`;
+
+    if (btn.dataset.action === "download") {
+      const { data, error } = await supabaseClient.storage.from(BUCKET_NAME).download(path);
+      if (error) {
+        showToast(error.message, "error");
+        return;
+      }
+      const url = URL.createObjectURL(data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    if (btn.dataset.action === "delete") {
+      if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+      const { error } = await supabaseClient.storage.from(BUCKET_NAME).remove([path]);
+      if (error) {
+        showToast(error.message, "error");
+        return;
+      }
+      showToast("File deleted");
+      loadFiles();
+    }
+  });
+
+  // ---------------------------------------------------------------
+  // UploadDialog
+  // ---------------------------------------------------------------
+  const uploadDialog = document.getElementById("upload-dialog");
+  const dropZone = document.getElementById("drop-zone");
+  const fileInput = document.getElementById("file-input");
+  const selectedFileBox = document.getElementById("selected-file");
+  const selectedFileName = document.getElementById("selected-file-name");
+  const selectedFileSize = document.getElementById("selected-file-size");
+  const confirmUploadBtn = document.getElementById("confirm-upload");
+  const uploadProgress = document.getElementById("upload-progress");
+  const uploadProgressBar = document.getElementById("upload-progress-bar");
+
+  let pendingFile = null;
+  const MAX_SIZE = 50 * 1024 * 1024; // 50MB
+
+  function openDialog() {
+    uploadDialog.classList.remove("hidden");
+  }
+
+  function closeDialog() {
+    uploadDialog.classList.add("hidden");
+    pendingFile = null;
+    fileInput.value = "";
+    selectedFileBox.classList.add("hidden");
+    uploadProgress.classList.add("hidden");
+    uploadProgressBar.style.width = "0%";
+    confirmUploadBtn.disabled = true;
+  }
+
+  document.getElementById("open-upload").addEventListener("click", openDialog);
+  document.getElementById("close-upload").addEventListener("click", closeDialog);
+  uploadDialog.addEventListener("click", (e) => {
+    if (e.target === uploadDialog) closeDialog();
+  });
+
+  dropZone.addEventListener("click", () => fileInput.click());
+
+  dropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropZone.classList.add("border-primary");
+  });
+  dropZone.addEventListener("dragleave", () => dropZone.classList.remove("border-primary"));
+  dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropZone.classList.remove("border-primary");
+    if (e.dataTransfer.files.length) handleFileSelect(e.dataTransfer.files[0]);
+  });
+
+  fileInput.addEventListener("change", (e) => {
+    if (e.target.files.length) handleFileSelect(e.target.files[0]);
+  });
+
+  function handleFileSelect(file) {
+    if (file.size > MAX_SIZE) {
+      showToast("File too large (max 50MB)", "error");
+      return;
+    }
+    pendingFile = file;
+    selectedFileName.textContent = file.name;
+    selectedFileSize.textContent = formatSize(file.size);
+    selectedFileBox.classList.remove("hidden");
+    confirmUploadBtn.disabled = false;
+  }
+
+  confirmUploadBtn.addEventListener("click", async () => {
+    if (!pendingFile) return;
+
+    confirmUploadBtn.disabled = true;
+    uploadProgress.classList.remove("hidden");
+    uploadProgressBar.style.width = "30%";
+
+    const path = `${userFolder()}/${pendingFile.name}`;
+
+    const { error } = await supabaseClient.storage
+      .from(BUCKET_NAME)
+      .upload(path, pendingFile, { upsert: true });
+
+    uploadProgressBar.style.width = "100%";
+
+    if (error) {
+      showToast(error.message, "error");
+      confirmUploadBtn.disabled = false;
+      return;
+    }
+
+    showToast("File uploaded");
+    setTimeout(() => {
+      closeDialog();
+      loadFiles();
+    }, 300);
+  });
+
+  // ---------------------------------------------------------------
+  // Init
+  // ---------------------------------------------------------------
+  (async function init() {
+    currentUser = await requireAuth();
+    if (!currentUser) return;
+    await loadFiles();
+  })();
+</script>
+
+</body>
+</html>

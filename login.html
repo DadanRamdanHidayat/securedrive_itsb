@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sign in — SecureDrive</title>
+<meta name="description" content="Sign in or create your SecureDrive account to access encrypted files." />
+
+<!-- Tailwind (CDN, no build step) -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Google Fonts: display + body -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<!-- Material Design Icons (MDI) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" />
+
+<!-- Supabase JS client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          background: "#080b10",
+          sidebar: "#0b0f16",
+          card: "#0e131b",
+          border: "#1b232f",
+          primary: "#1fd6a8",
+          "primary-foreground": "#04120e",
+          muted: "#7c8a9a",
+        },
+        fontFamily: {
+          display: ["Space Grotesk", "sans-serif"],
+          sans: ["Inter", "sans-serif"],
+        },
+      },
+    },
+  };
+</script>
+
+<style>
+  body {
+    background: #080b10;
+    color: #e6ebf0;
+  }
+
+  .gradient-primary {
+    background-image: linear-gradient(135deg, #1fd6a8 0%, #22b8ff 100%);
+  }
+
+  .gradient-text {
+    background-image: linear-gradient(135deg, #1fd6a8 0%, #22b8ff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .vault-glow {
+    box-shadow: 0 0 40px -8px rgba(31, 214, 168, 0.55);
+  }
+
+  .vault-card {
+    background: #0e131b;
+    border: 1px solid #1b232f;
+    border-radius: 1rem;
+  }
+
+  .grid-bg {
+    background-color: #080b10;
+    background-image:
+      linear-gradient(rgba(31, 214, 168, 0.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(31, 214, 168, 0.08) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+
+  .font-display {
+    font-family: "Space Grotesk", sans-serif;
+  }
+
+  .mdi {
+    line-height: 1;
+    vertical-align: middle;
+  }
+
+  input:focus-visible,
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid #1fd6a8;
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+</style>
+</head>
+
+<body class="min-h-screen font-sans antialiased">
+
+<div class="min-h-screen grid lg:grid-cols-2">
+
+  <!-- Left brand panel -->
+  <div class="hidden lg:flex relative overflow-hidden grid-bg p-12 flex-col justify-between">
+    <div class="flex items-center gap-3">
+      <div class="size-11 rounded-xl grid place-items-center gradient-primary vault-glow">
+        <i class="mdi mdi-shield-lock-outline text-xl text-primary-foreground"></i>
+      </div>
+      <div class="font-display text-xl font-semibold tracking-tight">
+        Secure<span class="gradient-text">Drive</span>
+      </div>
+    </div>
+
+    <div class="space-y-5 max-w-md">
+      <div class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-primary">
+        <i class="mdi mdi-lock-outline text-sm"></i> Vault-grade storage
+      </div>
+      <h1 class="text-4xl font-display font-semibold leading-tight">
+        Files are encrypted before they ever touch the disk.
+      </h1>
+      <p class="text-muted">
+        SecureDrive wraps every upload in AES-256-GCM, hands you fine-grained
+        sharing controls, and writes every action to a tamper-evident audit log.
+      </p>
+      <ul class="space-y-2 text-sm" id="feature-list"></ul>
+    </div>
+
+    <div class="text-xs text-muted" id="year-line"></div>
+  </div>
+
+  <!-- Right auth form -->
+  <div class="flex items-center justify-center p-6 lg:p-12">
+    <div class="vault-card w-full max-w-md p-8">
+
+      <div class="lg:hidden mb-6 flex items-center gap-3">
+        <div class="size-10 rounded-xl grid place-items-center gradient-primary">
+          <i class="mdi mdi-shield-lock-outline text-lg text-primary-foreground"></i>
+        </div>
+        <div class="font-display text-lg font-semibold">
+          Secure<span class="gradient-text">Drive</span>
+        </div>
+      </div>
+
+      <h2 class="text-2xl font-display font-semibold" id="form-title">Sign in to your vault</h2>
+      <p class="mt-1 text-sm text-muted" id="form-subtitle">
+        Use your email and password to continue.
+      </p>
+
+      <form id="auth-form" class="mt-6 space-y-4">
+        <div class="space-y-1.5">
+          <label for="email" class="text-sm font-medium">Email</label>
+          <div class="relative">
+            <i class="mdi mdi-email-outline text-base absolute left-3 top-1/2 -translate-y-1/2 text-muted"></i>
+            <input
+              id="email"
+              type="email"
+              required
+              autocomplete="email"
+              placeholder="you@email.com"
+              class="w-full pl-9 pr-3 h-10 rounded-md bg-background border border-border text-sm placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <label for="password" class="text-sm font-medium">Password</label>
+          <div class="relative">
+            <i class="mdi mdi-key-outline text-base absolute left-3 top-1/2 -translate-y-1/2 text-muted"></i>
+            <input
+              id="password"
+              type="password"
+              required
+              minlength="6"
+              autocomplete="current-password"
+              placeholder="••••••••"
+              class="w-full pl-9 pr-3 h-10 rounded-md bg-background border border-border text-sm placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          id="submit-btn"
+          class="w-full h-10 rounded-md gradient-primary text-primary-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60 disabled:cursor-not-allowed"
+        >
+          Sign in
+        </button>
+      </form>
+
+      <p class="mt-6 text-sm text-center text-muted">
+        <span id="toggle-question">Don't have an account?</span>
+        <button id="toggle-mode" class="text-primary hover:underline">Register</button>
+      </p>
+
+      <a href="/" class="mt-4 block text-center text-xs text-muted hover:text-white transition-colors">
+        ← Back
+      </a>
+
+      <!-- Simple toast area -->
+      <div id="toast" class="hidden mt-4 rounded-md px-3 py-2 text-sm"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---------------------------------------------------------------
+  // Static content (mirrors the original React component)
+  // Runs first, independent of Supabase, so the UI always works
+  // even if Supabase isn't configured yet.
+  // ---------------------------------------------------------------
+  const features = [
+    "AES-256-GCM at rest",
+    "Per-user access control",
+    "Activity log for every action",
+    "No public sharing links",
+  ];
+
+  const featureList = document.getElementById("feature-list");
+  features.forEach((f) => {
+    const li = document.createElement("li");
+    li.className = "flex items-center gap-2";
+    li.innerHTML = `<span class="size-1.5 rounded-full bg-primary"></span>${f}`;
+    featureList.appendChild(li);
+  });
+
+  document.getElementById("year-line").textContent =
+    `© ${new Date().getFullYear()} SecureDrive — built for confidentiality.`;
+
+  // ---------------------------------------------------------------
+  // Toast helper (tiny replacement for the "sonner" library)
+  // ---------------------------------------------------------------
+  function showToast(message, variant = "success") {
+    const toast = document.getElementById("toast");
+    toast.textContent = message;
+    toast.classList.remove("hidden");
+    toast.className =
+      "mt-4 rounded-md px-3 py-2 text-sm border " +
+      (variant === "success"
+        ? "bg-card text-primary border-primary/30"
+        : "bg-card text-red-400 border-red-500/30");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toast.classList.add("hidden"), 4000);
+  }
+
+  // ---------------------------------------------------------------
+  // Mode toggle (login <-> register)
+  // Set up right away so the button always works, even if
+  // Supabase below fails to initialize.
+  // ---------------------------------------------------------------
+  let mode = "login";
+
+  const formTitle = document.getElementById("form-title");
+  const formSubtitle = document.getElementById("form-subtitle");
+  const submitBtn = document.getElementById("submit-btn");
+  const toggleQuestion = document.getElementById("toggle-question");
+  const toggleModeBtn = document.getElementById("toggle-mode");
+  const passwordInput = document.getElementById("password");
+
+  function renderMode() {
+    if (mode === "login") {
+      formTitle.textContent = "Sign in to your vault";
+      formSubtitle.textContent = "Use your email and password to continue.";
+      submitBtn.textContent = "Sign in";
+      toggleQuestion.textContent = "Don't have an account?";
+      toggleModeBtn.textContent = "Register";
+      passwordInput.setAttribute("autocomplete", "current-password");
+    } else {
+      formTitle.textContent = "Create your vault";
+      formSubtitle.textContent = "Register to start storing encrypted files.";
+      submitBtn.textContent = "Create account";
+      toggleQuestion.textContent = "Already have an account?";
+      toggleModeBtn.textContent = "Sign in";
+      passwordInput.setAttribute("autocomplete", "new-password");
+    }
+  }
+
+  toggleModeBtn.addEventListener("click", () => {
+    mode = mode === "login" ? "register" : "login";
+    renderMode();
+  });
+
+  // ---------------------------------------------------------------
+  // Validation (mirrors the zod schema)
+  // ---------------------------------------------------------------
+  function validate(email, password) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!email || email.length > 255 || !emailRegex.test(email)) {
+      return "Invalid email";
+    }
+    if (!password || password.length < 6) {
+      return "Min 6 characters";
+    }
+    if (password.length > 128) {
+      return "Password too long";
+    }
+    return null;
+  }
+
+  // ---------------------------------------------------------------
+  // Configure your Supabase project here.
+  // Wrapped in try/catch so a bad URL/key never breaks the rest
+  // of the page (toggle button, validation, etc. keep working).
+  // ---------------------------------------------------------------
+  const SUPABASE_URL = "https://mmpyztwsdeapnzrubiag.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_h942Ip3N5iwlEjtofekOqQ_qqg28710";
+
+  let supabaseClient = null;
+  try {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } catch (err) {
+    console.error("Supabase failed to initialize — check SUPABASE_URL / SUPABASE_ANON_KEY.", err);
+  }
+
+  // ---------------------------------------------------------------
+  // Session check on load (redirect if already signed in)
+  // ---------------------------------------------------------------
+  if (supabaseClient) {
+    supabaseClient.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        window.location.href = "dashboard.html";
+      }
+    });
+  }
+
+  // ---------------------------------------------------------------
+  // Submit handler
+  // ---------------------------------------------------------------
+  const form = document.getElementById("auth-form");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    if (!supabaseClient) {
+      showToast("Supabase isn't configured yet — check SUPABASE_URL / SUPABASE_ANON_KEY.", "error");
+      return;
+    }
+
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+
+    const validationError = validate(email, password);
+    if (validationError) {
+      showToast(validationError, "error");
+      return;
+    }
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Working...";
+
+    try {
+      let result;
+      if (mode === "login") {
+        result = await supabaseClient.auth.signInWithPassword({ email, password });
+      } else {
+        result = await supabaseClient.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: window.location.origin },
+        });
+      }
+
+      if (result.error) throw result.error;
+
+      showToast(mode === "login" ? "Welcome back" : "Account created", "success");
+      window.location.href = "dashboard.html";
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : "Authentication failed", "error");
+    } finally {
+      submitBtn.disabled = false;
+      renderMode();
+    }
+  });
+</script>
+
+</body>
+</html>

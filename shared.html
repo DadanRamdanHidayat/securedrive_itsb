@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Shared with me — SecureDrive</title>
+
+<!-- Tailwind (CDN, no build step) -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Google Fonts: display + body -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<!-- Material Design Icons (MDI) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" />
+
+<!-- Supabase JS client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          background: "#080b10",
+          sidebar: "#0b0f16",
+          card: "#0e131b",
+          border: "#1b232f",
+          primary: "#1fd6a8",
+          "primary-foreground": "#04120e",
+          muted: "#7c8a9a",
+        },
+        fontFamily: {
+          display: ["Space Grotesk", "sans-serif"],
+          sans: ["Inter", "sans-serif"],
+        },
+      },
+    },
+  };
+</script>
+
+<style>
+  body {
+    background: #080b10;
+    color: #e6ebf0;
+  }
+
+  .gradient-text {
+    background-image: linear-gradient(135deg, #1fd6a8 0%, #22b8ff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .font-display {
+    font-family: "Space Grotesk", sans-serif;
+  }
+
+  .mdi {
+    line-height: 1;
+    vertical-align: middle;
+  }
+
+  input:focus-visible,
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid #1fd6a8;
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: 0.6rem;
+    color: #9aa7b5;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background-color .15s, color .15s;
+  }
+  .nav-item:hover {
+    background: #131a24;
+    color: #e6ebf0;
+  }
+  .nav-item.active {
+    background: #131c27;
+    color: #ffffff;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(31, 214, 168, 0.12);
+    color: #1fd6a8;
+  }
+
+  .perm-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    border: 1px solid #1b232f;
+    color: #9aa7b5;
+  }
+
+  .share-card {
+    background: #0e131b;
+    border: 1px solid #1b232f;
+    border-radius: 0.85rem;
+  }
+</style>
+</head>
+
+<body class="min-h-screen font-sans antialiased">
+
+<div class="flex min-h-screen">
+
+  <!-- Sidebar -->
+  <aside class="hidden md:flex w-64 flex-col justify-between bg-sidebar border-r border-border p-5">
+    <div>
+      <div class="flex items-center gap-3 mb-8">
+        <div class="size-9 rounded-lg grid place-items-center bg-primary/15 border border-primary/30">
+          <i class="mdi mdi-shield-lock-outline text-lg text-primary"></i>
+        </div>
+        <div>
+          <div class="font-display text-base font-semibold leading-none">
+            Secure<span class="gradient-text">Drive</span>
+          </div>
+          <div class="text-[10px] uppercase tracking-[0.15em] text-muted mt-1">AES-256 Vault</div>
+        </div>
+      </div>
+
+      <nav class="space-y-1">
+        <a href="dashboard.html" class="nav-item">
+          <i class="mdi mdi-file-document-outline text-base"></i> My Files
+        </a>
+        <a href="shared.html" class="nav-item active">
+          <i class="mdi mdi-share-variant-outline text-base"></i> Shared With Me
+        </a>
+        <a href="recent.html" class="nav-item">
+          <i class="mdi mdi-clock-outline text-base"></i> Recent
+        </a>
+        <a href="favorite.html" class="nav-item">
+          <i class="mdi mdi-star-outline text-base"></i> Favorites
+        </a>
+        <a href="activity.html" class="nav-item">
+          <i class="mdi mdi-pulse text-base"></i> Activity Log
+        </a>
+        <a href="setting.html" class="nav-item">
+          <i class="mdi mdi-cog-outline text-base"></i> Settings
+        </a>
+      </nav>
+    </div>
+
+    <div>
+      <div class="rounded-xl bg-card border border-border p-4 mb-3">
+        <div class="flex items-center gap-2 text-sm font-medium mb-1">
+          <span class="size-2 rounded-full bg-primary"></span> Vault online
+        </div>
+        <p class="text-xs text-muted leading-relaxed">
+          All files encrypted at rest with AES-256-GCM.
+        </p>
+      </div>
+      <button id="signout-btn" class="nav-item w-full justify-start">
+        <i class="mdi mdi-logout text-base"></i> Sign out
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="flex-1 p-6 lg:p-10 max-w-6xl">
+
+    <div class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-primary mb-2">
+      <i class="mdi mdi-account-group-outline text-sm"></i> Shared access
+    </div>
+    <h1 class="text-3xl font-display font-semibold mb-1">Shared With Me</h1>
+    <p class="text-sm text-muted mb-6">
+      Files other users have granted you access to.
+    </p>
+
+    <div id="loading-state" class="text-muted">Loading…</div>
+
+    <div id="empty-state" class="hidden share-card p-10 text-center text-muted">
+      <i class="mdi mdi-file-lock-outline text-3xl mx-auto mb-2 opacity-50 block"></i>
+      Nothing shared with you yet.
+    </div>
+
+    <div id="shares-grid" class="hidden grid sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+  </main>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="hidden fixed bottom-6 right-6 rounded-md px-4 py-3 text-sm shadow-lg"></div>
+
+<script>
+  // ---------------------------------------------------------------
+  // Configure your Supabase project here (same project as login.html / dashboard.html)
+  // ---------------------------------------------------------------
+  const SUPABASE_URL = "https://mmpyztwsdeapnzrubiag.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_h942Ip3N5iwlEjtofekOqQ_qqg28710";
+
+  // Same Storage bucket used in dashboard.html
+  const BUCKET_NAME = "vault-files";
+
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let currentUser = null;
+
+  // ---------------------------------------------------------------
+  // Toast helper
+  // ---------------------------------------------------------------
+  function showToast(message, variant = "success") {
+    const toast = document.getElementById("toast");
+    toast.textContent = message;
+    toast.classList.remove("hidden");
+    toast.className =
+      "fixed bottom-6 right-6 rounded-md px-4 py-3 text-sm shadow-lg border " +
+      (variant === "success"
+        ? "bg-card text-primary border-primary/30"
+        : "bg-card text-red-400 border-red-500/30");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toast.classList.add("hidden"), 4000);
+  }
+
+  // ---------------------------------------------------------------
+  // Auth guard
+  // ---------------------------------------------------------------
+  async function requireAuth() {
+    const { data } = await supabaseClient.auth.getSession();
+    if (!data.session) {
+      window.location.href = "login.html";
+      return null;
+    }
+    return data.session.user;
+  }
+
+  document.getElementById("signout-btn").addEventListener("click", async () => {
+    await supabaseClient.auth.signOut();
+    window.location.href = "login.html";
+  });
+
+  // ---------------------------------------------------------------
+  // Load shares
+  //
+  // Expects a `shares` table with columns:
+  //   id, file_path, file_name, owner_id, shared_with_id, permission ('view' | 'download'), created_at
+  // and a `profiles` table with columns:
+  //   id (references auth.users), email, display_name
+  //
+  // See setup notes for the SQL to create these.
+  // ---------------------------------------------------------------
+  const loadingState = document.getElementById("loading-state");
+  const emptyState = document.getElementById("empty-state");
+  const sharesGrid = document.getElementById("shares-grid");
+
+  async function loadShares() {
+    const { data, error } = await supabaseClient
+      .from("shares")
+      .select("id, file_path, file_name, permission, owner:profiles!shares_owner_id_fkey(display_name, email)")
+      .eq("shared_with_id", currentUser.id)
+      .order("created_at", { ascending: false });
+
+    loadingState.classList.add("hidden");
+
+    if (error) {
+      sharesGrid.classList.add("hidden");
+      emptyState.classList.remove("hidden");
+      emptyState.innerHTML = `<span class="text-red-400">${error.message}</span>`;
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      sharesGrid.classList.add("hidden");
+      emptyState.classList.remove("hidden");
+      return;
+    }
+
+    emptyState.classList.add("hidden");
+    sharesGrid.classList.remove("hidden");
+    sharesGrid.innerHTML = "";
+
+    data.forEach((share) => {
+      const canDownload = share.permission === "download";
+      const ownerLabel = share.owner?.display_name || share.owner?.email || "unknown";
+
+      const card = document.createElement("div");
+      card.className = "share-card p-5 flex flex-col gap-3";
+      card.innerHTML = `
+        <div class="flex items-center gap-3">
+          <div class="size-10 rounded-md grid place-items-center bg-primary/10 text-primary">
+            <i class="mdi mdi-file-lock-outline text-lg"></i>
+          </div>
+          <div class="min-w-0">
+            <div class="font-medium truncate">${share.file_name}</div>
+            <div class="text-xs text-muted truncate">from ${ownerLabel}</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="status-pill"><i class="mdi mdi-shield-check-outline text-sm"></i> Encrypted</span>
+          <span class="perm-pill">
+            <i class="mdi mdi-${canDownload ? "download-outline" : "eye-outline"} text-sm"></i> ${share.permission}
+          </span>
+        </div>
+        <button
+          data-path="${share.file_path}"
+          data-name="${share.file_name}"
+          ${canDownload ? "" : "disabled"}
+          title="${canDownload ? "Download" : "View-only — owner did not allow download"}"
+          class="mt-auto h-9 rounded-md text-sm font-medium flex items-center justify-center gap-1.5 transition-opacity ${
+            canDownload
+              ? "bg-primary text-primary-foreground hover:opacity-90"
+              : "bg-border text-muted cursor-not-allowed"
+          }"
+        >
+          <i class="mdi mdi-download-outline text-base"></i>
+          ${canDownload ? "Download" : "View only"}
+        </button>
+      `;
+      sharesGrid.appendChild(card);
+    });
+  }
+
+  sharesGrid.addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-path]");
+    if (!btn || btn.disabled) return;
+
+    const path = btn.dataset.path;
+    const name = btn.dataset.name;
+
+    const { data, error } = await supabaseClient.storage.from(BUCKET_NAME).download(path);
+    if (error) {
+      showToast(error.message, "error");
+      return;
+    }
+
+    const url = URL.createObjectURL(data);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // ---------------------------------------------------------------
+  // Init
+  // ---------------------------------------------------------------
+  (async function init() {
+    currentUser = await requireAuth();
+    if (!currentUser) return;
+    await loadShares();
+  })();
+</script>
+
+</body>
+</html>

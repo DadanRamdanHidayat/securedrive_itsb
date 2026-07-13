@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Activity Log — SecureDrive</title>
+
+<!-- Tailwind (CDN, no build step) -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Google Fonts: display + body -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<!-- Material Design Icons (MDI) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" />
+
+<!-- Supabase JS client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          background: "#080b10",
+          sidebar: "#0b0f16",
+          card: "#0e131b",
+          border: "#1b232f",
+          primary: "#1fd6a8",
+          "primary-foreground": "#04120e",
+          muted: "#7c8a9a",
+        },
+        fontFamily: {
+          display: ["Space Grotesk", "sans-serif"],
+          sans: ["Inter", "sans-serif"],
+        },
+      },
+    },
+  };
+</script>
+
+<style>
+  body {
+    background: #080b10;
+    color: #e6ebf0;
+  }
+
+  .gradient-text {
+    background-image: linear-gradient(135deg, #1fd6a8 0%, #22b8ff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .font-display {
+    font-family: "Space Grotesk", sans-serif;
+  }
+
+  .mdi {
+    line-height: 1;
+    vertical-align: middle;
+  }
+
+  input:focus-visible,
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid #1fd6a8;
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: 0.6rem;
+    color: #9aa7b5;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background-color .15s, color .15s;
+  }
+  .nav-item:hover {
+    background: #131a24;
+    color: #e6ebf0;
+  }
+  .nav-item.active {
+    background: #131c27;
+    color: #ffffff;
+  }
+
+  .vault-card {
+    background: #0e131b;
+    border: 1px solid #1b232f;
+    border-radius: 0.85rem;
+    overflow: hidden;
+  }
+
+  .activity-row:hover {
+    background: rgba(31, 214, 168, 0.04);
+  }
+</style>
+</head>
+
+<body class="min-h-screen font-sans antialiased">
+
+<div class="flex min-h-screen">
+
+  <!-- Sidebar -->
+  <aside class="hidden md:flex w-64 flex-col justify-between bg-sidebar border-r border-border p-5">
+    <div>
+      <div class="flex items-center gap-3 mb-8">
+        <div class="size-9 rounded-lg grid place-items-center bg-primary/15 border border-primary/30">
+          <i class="mdi mdi-shield-lock-outline text-lg text-primary"></i>
+        </div>
+        <div>
+          <div class="font-display text-base font-semibold leading-none">
+            Secure<span class="gradient-text">Drive</span>
+          </div>
+          <div class="text-[10px] uppercase tracking-[0.15em] text-muted mt-1">AES-256 Vault</div>
+        </div>
+      </div>
+
+      <nav class="space-y-1">
+        <a href="dashboard.html" class="nav-item">
+          <i class="mdi mdi-file-document-outline text-base"></i> My Files
+        </a>
+        <a href="shared.html" class="nav-item">
+          <i class="mdi mdi-share-variant-outline text-base"></i> Shared With Me
+        </a>
+        <a href="recent.html" class="nav-item">
+          <i class="mdi mdi-clock-outline text-base"></i> Recent
+        </a>
+        <a href="favorite.html" class="nav-item">
+          <i class="mdi mdi-star-outline text-base"></i> Favorites
+        </a>
+        <a href="activity.html" class="nav-item active">
+          <i class="mdi mdi-pulse text-base"></i> Activity Log
+        </a>
+        <a href="setting.html" class="nav-item">
+          <i class="mdi mdi-cog-outline text-base"></i> Settings
+        </a>
+      </nav>
+    </div>
+
+    <div>
+      <div class="rounded-xl bg-card border border-border p-4 mb-3">
+        <div class="flex items-center gap-2 text-sm font-medium mb-1">
+          <span class="size-2 rounded-full bg-primary"></span> Vault online
+        </div>
+        <p class="text-xs text-muted leading-relaxed">
+          All files encrypted at rest with AES-256-GCM.
+        </p>
+      </div>
+      <button id="signout-btn" class="nav-item w-full justify-start">
+        <i class="mdi mdi-logout text-base"></i> Sign out
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="flex-1 p-6 lg:p-10 max-w-4xl">
+
+    <div class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-primary mb-2">
+      <i class="mdi mdi-pulse text-sm"></i> Audit trail
+    </div>
+    <h1 class="text-3xl font-display font-semibold mb-1">Activity Log</h1>
+    <p class="text-sm text-muted mb-6">
+      Every encryption, share, and access event is recorded.
+    </p>
+
+    <div id="activity-list" class="vault-card divide-y divide-border">
+      <div class="p-6 text-muted">Loading…</div>
+    </div>
+
+    <!-- Empty state -->
+    <div id="empty-state" class="hidden vault-card mt-4 p-10 text-center text-muted">
+      No activity yet.
+    </div>
+
+  </main>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="hidden fixed bottom-6 right-6 rounded-md px-4 py-3 text-sm shadow-lg"></div>
+
+<script>
+  // ---------------------------------------------------------------
+  // Configure your Supabase project here (same project as login.html / dashboard.html)
+  // ---------------------------------------------------------------
+  const SUPABASE_URL = "https://mmpyztwsdeapnzrubiag.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_h942Ip3N5iwlEjtofekOqQ_qqg28710";
+
+  // ---------------------------------------------------------------
+  // Activity events are read from an `activity_log` table
+  // (this mirrors the server function `listActivity` used in the
+  // React version, since a static page can't call a server fn).
+  //
+  // Expected schema:
+  //   create table activity_log (
+  //     id uuid primary key default gen_random_uuid(),
+  //     user_id uuid references auth.users not null,
+  //     action text not null,       -- 'upload' | 'download' | 'share' | 'delete' | 'favorite'
+  //     file_name text,
+  //     details text,
+  //     created_at timestamptz default now()
+  //   );
+  //
+  // Insert a row here (from dashboard.html, shared.html, etc.)
+  // whenever the matching action happens, e.g.:
+  //   await supabaseClient.from("activity_log").insert({
+  //     user_id: currentUser.id,
+  //     action: "upload",
+  //     file_name: name,
+  //   });
+  // ---------------------------------------------------------------
+  const ACTIVITY_TABLE = "activity_log";
+  const ACTIVITY_LIMIT = 50;
+
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let currentUser = null;
+
+  // Maps each action to an MDI icon (equivalent of the lucide iconFor map)
+  const iconFor = {
+    upload: "mdi-upload",
+    download: "mdi-download",
+    share: "mdi-share-variant",
+    delete: "mdi-trash-can-outline",
+    favorite: "mdi-star",
+  };
+  const DEFAULT_ICON = "mdi-pulse";
+
+  // ---------------------------------------------------------------
+  // Toast helper
+  // ---------------------------------------------------------------
+  function showToast(message, variant = "success") {
+    const toast = document.getElementById("toast");
+    toast.textContent = message;
+    toast.classList.remove("hidden");
+    toast.className =
+      "fixed bottom-6 right-6 rounded-md px-4 py-3 text-sm shadow-lg border " +
+      (variant === "success"
+        ? "bg-card text-primary border-primary/30"
+        : "bg-card text-red-400 border-red-500/30");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toast.classList.add("hidden"), 4000);
+  }
+
+  function capitalize(s) {
+    return s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str ?? "";
+    return div.innerHTML;
+  }
+
+  // ---------------------------------------------------------------
+  // Auth guard
+  // ---------------------------------------------------------------
+  async function requireAuth() {
+    const { data } = await supabaseClient.auth.getSession();
+    if (!data.session) {
+      window.location.href = "login.html";
+      return null;
+    }
+    return data.session.user;
+  }
+
+  document.getElementById("signout-btn").addEventListener("click", async () => {
+    await supabaseClient.auth.signOut();
+    window.location.href = "login.html";
+  });
+
+  // ---------------------------------------------------------------
+  // ActivityLog: list recent events for the current user
+  // ---------------------------------------------------------------
+  const activityList = document.getElementById("activity-list");
+  const emptyState = document.getElementById("empty-state");
+
+  async function loadActivity() {
+    const { data, error } = await supabaseClient
+      .from(ACTIVITY_TABLE)
+      .select("id, action, file_name, details, created_at")
+      .eq("user_id", currentUser.id)
+      .order("created_at", { ascending: false })
+      .limit(ACTIVITY_LIMIT);
+
+    if (error) {
+      activityList.innerHTML = `<div class="p-6 text-center text-red-400">${escapeHtml(error.message)}</div>`;
+      return;
+    }
+
+    renderActivity(data || []);
+  }
+
+  function renderActivity(logs) {
+    if (logs.length === 0) {
+      activityList.classList.add("hidden");
+      emptyState.classList.remove("hidden");
+      return;
+    }
+
+    emptyState.classList.add("hidden");
+    activityList.classList.remove("hidden");
+    activityList.innerHTML = "";
+
+    logs.forEach((l) => {
+      const icon = iconFor[l.action] ?? DEFAULT_ICON;
+      const row = document.createElement("div");
+      row.className = "activity-row flex items-start gap-4 p-4";
+      row.innerHTML = `
+        <div class="size-9 rounded-md grid place-items-center bg-primary/10 text-primary shrink-0">
+          <i class="mdi ${icon} text-base"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm">
+            <span class="font-medium capitalize">${escapeHtml(l.action)}</span>
+            ${
+              l.file_name
+                ? `<span class="text-muted"> · </span><span>${escapeHtml(l.file_name)}</span>`
+                : ""
+            }
+          </div>
+          ${
+            l.details
+              ? `<div class="text-xs text-muted mt-0.5">${escapeHtml(l.details)}</div>`
+              : ""
+          }
+        </div>
+        <div class="text-xs text-muted whitespace-nowrap">
+          ${new Date(l.created_at).toLocaleString()}
+        </div>
+      `;
+      activityList.appendChild(row);
+    });
+  }
+
+  // ---------------------------------------------------------------
+  // Init
+  // ---------------------------------------------------------------
+  (async function init() {
+    currentUser = await requireAuth();
+    if (!currentUser) return;
+    await loadActivity();
+  })();
+</script>
+
+</body>
+</html>

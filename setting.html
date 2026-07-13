@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Settings — SecureDrive</title>
+
+<!-- Tailwind (CDN, no build step) -->
+<script src="https://cdn.tailwindcss.com"></script>
+
+<!-- Google Fonts: display + body -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<!-- Material Design Icons (MDI) -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font@7.4.47/css/materialdesignicons.min.css" />
+
+<!-- Supabase JS client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          background: "#080b10",
+          sidebar: "#0b0f16",
+          card: "#0e131b",
+          border: "#1b232f",
+          primary: "#1fd6a8",
+          "primary-foreground": "#04120e",
+          muted: "#7c8a9a",
+        },
+        fontFamily: {
+          display: ["Space Grotesk", "sans-serif"],
+          sans: ["Inter", "sans-serif"],
+        },
+      },
+    },
+  };
+</script>
+
+<style>
+  body {
+    background: #080b10;
+    color: #e6ebf0;
+  }
+
+  .gradient-text {
+    background-image: linear-gradient(135deg, #1fd6a8 0%, #22b8ff 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .font-display {
+    font-family: "Space Grotesk", sans-serif;
+  }
+
+  .mdi {
+    line-height: 1;
+    vertical-align: middle;
+  }
+
+  input:focus-visible,
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid #1fd6a8;
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 0.85rem;
+    border-radius: 0.6rem;
+    color: #9aa7b5;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background-color .15s, color .15s;
+  }
+  .nav-item:hover {
+    background: #131a24;
+    color: #e6ebf0;
+  }
+  .nav-item.active {
+    background: #131c27;
+    color: #ffffff;
+  }
+
+  .vault-card {
+    background: #0e131b;
+    border: 1px solid #1b232f;
+    border-radius: 0.85rem;
+  }
+
+  .field-label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #9aa7b5;
+    margin-bottom: 0.35rem;
+  }
+
+  .field-input {
+    width: 100%;
+    height: 2.5rem;
+    padding: 0 0.75rem;
+    border-radius: 0.5rem;
+    background: #080b10;
+    border: 1px solid #1b232f;
+    color: #e6ebf0;
+    font-size: 0.9rem;
+  }
+  .field-input::placeholder {
+    color: #7c8a9a;
+  }
+  .field-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(31, 214, 168, 0.5);
+    border-color: #1fd6a8;
+  }
+  .field-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .btn-primary {
+    height: 2.5rem;
+    padding: 0 1.1rem;
+    border-radius: 0.5rem;
+    background: #1fd6a8;
+    color: #04120e;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: opacity .15s;
+  }
+  .btn-primary:hover {
+    opacity: 0.9;
+  }
+  .btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .btn-outline {
+    height: 2.5rem;
+    padding: 0 1.1rem;
+    border-radius: 0.5rem;
+    background: transparent;
+    border: 1px solid #1b232f;
+    color: #e6ebf0;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: background-color .15s, border-color .15s;
+  }
+  .btn-outline:hover {
+    background: #131a24;
+    border-color: #2a3441;
+  }
+</style>
+</head>
+
+<body class="min-h-screen font-sans antialiased">
+
+<div class="flex min-h-screen">
+
+  <!-- Sidebar -->
+  <aside class="hidden md:flex w-64 flex-col justify-between bg-sidebar border-r border-border p-5">
+    <div>
+      <div class="flex items-center gap-3 mb-8">
+        <div class="size-9 rounded-lg grid place-items-center bg-primary/15 border border-primary/30">
+          <i class="mdi mdi-shield-lock-outline text-lg text-primary"></i>
+        </div>
+        <div>
+          <div class="font-display text-base font-semibold leading-none">
+            Secure<span class="gradient-text">Drive</span>
+          </div>
+          <div class="text-[10px] uppercase tracking-[0.15em] text-muted mt-1">AES-256 Vault</div>
+        </div>
+      </div>
+
+      <nav class="space-y-1">
+        <a href="dashboard.html" class="nav-item">
+          <i class="mdi mdi-file-document-outline text-base"></i> My Files
+        </a>
+        <a href="shared.html" class="nav-item">
+          <i class="mdi mdi-share-variant-outline text-base"></i> Shared With Me
+        </a>
+        <a href="recent.html" class="nav-item">
+          <i class="mdi mdi-clock-outline text-base"></i> Recent
+        </a>
+        <a href="favorite.html" class="nav-item">
+          <i class="mdi mdi-star-outline text-base"></i> Favorites
+        </a>
+        <a href="activity.html" class="nav-item">
+          <i class="mdi mdi-pulse text-base"></i> Activity Log
+        </a>
+        <a href="setting.html" class="nav-item active">
+          <i class="mdi mdi-cog-outline text-base"></i> Settings
+        </a>
+      </nav>
+    </div>
+
+    <div>
+      <div class="rounded-xl bg-card border border-border p-4 mb-3">
+        <div class="flex items-center gap-2 text-sm font-medium mb-1">
+          <span class="size-2 rounded-full bg-primary"></span> Vault online
+        </div>
+        <p class="text-xs text-muted leading-relaxed">
+          All files encrypted at rest with AES-256-GCM.
+        </p>
+      </div>
+      <button id="signout-btn-sidebar" class="nav-item w-full justify-start">
+        <i class="mdi mdi-logout text-base"></i> Sign out
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="flex-1 p-6 lg:p-10 max-w-2xl">
+
+    <div class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-primary mb-2">
+      <i class="mdi mdi-cog-outline text-sm"></i> Account
+    </div>
+    <h1 class="text-3xl font-display font-semibold mb-6">Settings</h1>
+
+    <!-- Profile card -->
+    <div class="vault-card p-6 space-y-4">
+      <div>
+        <label class="field-label">Email</label>
+        <input id="email-input" type="text" class="field-input" disabled />
+      </div>
+      <div>
+        <label for="display-name-input" class="field-label">Display name</label>
+        <input id="display-name-input" type="text" class="field-input" placeholder="Your name" />
+      </div>
+      <button id="save-btn" class="btn-primary">Save</button>
+    </div>
+
+    <!-- Encryption info card -->
+    <div class="vault-card p-6 mt-6 space-y-3">
+      <div class="flex items-center gap-2 text-primary">
+        <i class="mdi mdi-shield-check-outline text-lg"></i>
+        <div class="font-medium">Encryption</div>
+      </div>
+      <p class="text-sm text-muted">
+        All files are encrypted with <strong>AES-256-GCM</strong> before storage.
+        The master key never leaves the server. Files are never accessible to anyone
+        without explicit user-level access.
+      </p>
+    </div>
+
+    <button id="signout-btn" class="btn-outline mt-6 flex items-center gap-2">
+      <i class="mdi mdi-logout text-base"></i> Sign out
+    </button>
+
+  </main>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="hidden fixed bottom-6 right-6 rounded-md px-4 py-3 text-sm shadow-lg"></div>
+
+<script>
+  // ---------------------------------------------------------------
+  // Configure your Supabase project here (same project as login.html / dashboard.html)
+  // ---------------------------------------------------------------
+  const SUPABASE_URL = "https://mmpyztwsdeapnzrubiag.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_h942Ip3N5iwlEjtofekOqQ_qqg28710";
+
+  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let currentUser = null;
+
+  // ---------------------------------------------------------------
+  // Toast helper
+  // ---------------------------------------------------------------
+  function showToast(message, variant = "success") {
+    const toast = document.getElementById("toast");
+    toast.textContent = message;
+    toast.classList.remove("hidden");
+    toast.className =
+      "fixed bottom-6 right-6 rounded-md px-4 py-3 text-sm shadow-lg border " +
+      (variant === "success"
+        ? "bg-card text-primary border-primary/30"
+        : "bg-card text-red-400 border-red-500/30");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toast.classList.add("hidden"), 4000);
+  }
+
+  // ---------------------------------------------------------------
+  // Auth guard
+  // ---------------------------------------------------------------
+  async function requireAuth() {
+    const { data } = await supabaseClient.auth.getSession();
+    if (!data.session) {
+      window.location.href = "login.html";
+      return null;
+    }
+    return data.session.user;
+  }
+
+  async function signOut() {
+    await supabaseClient.auth.signOut();
+    window.location.href = "login.html";
+  }
+
+  document.getElementById("signout-btn").addEventListener("click", signOut);
+  document.getElementById("signout-btn-sidebar").addEventListener("click", signOut);
+
+  // ---------------------------------------------------------------
+  // Profile form
+  // ---------------------------------------------------------------
+  const emailInput = document.getElementById("email-input");
+  const displayNameInput = document.getElementById("display-name-input");
+  const saveBtn = document.getElementById("save-btn");
+
+  async function loadProfile() {
+    emailInput.value = currentUser.email ?? "";
+
+    const { data: prof, error } = await supabaseClient
+      .from("profiles")
+      .select("display_name")
+      .eq("id", currentUser.id)
+      .maybeSingle();
+
+    if (error) {
+      showToast(error.message, "error");
+      return;
+    }
+
+    displayNameInput.value = prof?.display_name ?? "";
+  }
+
+  async function saveProfile() {
+    saveBtn.disabled = true;
+    saveBtn.textContent = "Saving…";
+
+    try {
+      const trimmed = displayNameInput.value.trim();
+      const { error } = await supabaseClient
+        .from("profiles")
+        .update({ display_name: trimmed || null })
+        .eq("id", currentUser.id);
+
+      if (error) throw error;
+      showToast("Profile saved");
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : "Save failed", "error");
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = "Save";
+    }
+  }
+
+  saveBtn.addEventListener("click", saveProfile);
+
+  // ---------------------------------------------------------------
+  // Init
+  // ---------------------------------------------------------------
+  (async function init() {
+    currentUser = await requireAuth();
+    if (!currentUser) return;
+    await loadProfile();
+  })();
+</script>
+
+</body>
+</html>
